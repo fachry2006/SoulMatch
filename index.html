@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="id" class="dark" id="html-root">
+<html lang="en" class="dark" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHRONOS 2026</title>
+    <title>CHRONOS // MAINNET LAUNCH</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/canvas-confetti/1.6.0/confetti.browser.min.js"></script>
@@ -35,8 +35,12 @@
             50% { transform: translateY(-12px) rotate(1.5deg); }
         }
         @keyframes pulseGlow {
-            0%, 100% { opacity: 0.4; filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4)); }
-            50% { opacity: 0.8; filter: drop-shadow(0 0 35px rgba(236, 72, 153, 0.7)); }
+            0%, 100% { opacity: 0.5; filter: drop-shadow(0 0 20px rgba(14, 165, 233, 0.4)); }
+            50% { opacity: 0.9; filter: drop-shadow(0 0 45px rgba(168, 85, 247, 0.8)); }
+        }
+        @keyframes radarSweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .number-change {
             animation: numberFlip 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -47,7 +51,7 @@
             text-align: center;
         }
         .shimmer-text {
-            background: linear-gradient(90deg, #6366f1 0%, #a855f7 25%, #ec4899 50%, #a855f7 75%, #6366f1 100%);
+            background: linear-gradient(90deg, #0ea5e9 0%, #a855f7 25%, #ec4899 50%, #a855f7 75%, #0ea5e9 100%);
             background-size: 200% auto;
             color: transparent;
             -webkit-background-clip: text;
@@ -60,8 +64,8 @@
             animation: pulseGlow 4s ease-in-out infinite;
         }
         body {
-            background-color: #030712;
-            color: #f9fafb;
+            background-color: #020617;
+            color: #f8fafc;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
             margin: 0;
@@ -74,57 +78,92 @@
             cursor: pointer;
         }
         .glass-panel {
-            background: rgba(15, 23, 42, 0.68);
-            backdrop-filter: blur(28px);
-            -webkit-backdrop-filter: blur(28px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.9), inset 0 1px 0 0 rgba(56, 189, 248, 0.2);
         }
         .interactive-btn {
-            background: rgba(30, 41, 59, 0.7);
+            background: rgba(30, 41, 59, 0.8);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.2);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .interactive-btn:hover {
-            background: rgba(99, 102, 241, 0.3);
-            border-color: rgba(99, 102, 241, 0.6);
+            background: rgba(14, 165, 233, 0.25);
+            border-color: rgba(56, 189, 248, 0.6);
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.4);
+        }
+        .crypto-badge {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(168, 85, 247, 0.15));
+            border: 1px solid rgba(56, 189, 248, 0.3);
         }
     </style>
 </head>
 <body class="w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
-    <div id="webgl-container" title="Click to interact with 3D space"></div>
+    <!-- 3D WebGL Background Simulation -->
+    <div id="webgl-container" title="Interactive 3D Mainnet Matrix"></div>
 
+    <!-- Top Crypto Telemetry & Controls Bar -->
     <header class="absolute top-6 z-20 flex items-center space-x-3 px-6 py-3 glass-panel rounded-full shadow-2xl">
-        <button id="lang-toggle" onclick="toggleLanguage()" class="interactive-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-indigo-300 flex items-center space-x-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path></svg>
-            <span id="lang-label">EN / ID</span>
-        </button>
-        <button id="sound-toggle" onclick="toggleSound()" class="interactive-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-pink-300 flex items-center space-x-2">
+        <!-- Network Status Indicator -->
+        <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full crypto-badge">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+            <span class="text-[10px] font-mono uppercase tracking-widest text-emerald-300 font-bold">MAINNET SYNC</span>
+        </div>
+
+        <!-- Language Selector (Top 10 Popular World Languages - No Indonesian) -->
+        <div class="relative">
+            <select id="lang-select" onchange="changeLanguage(this.value)" class="interactive-btn appearance-none px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-sky-300 cursor-pointer pr-8 focus:outline-none">
+                <option value="EN" class="bg-slate-900 text-slate-200">English (EN)</option>
+                <option value="ZH" class="bg-slate-900 text-slate-200">中文 (ZH)</option>
+                <option value="ES" class="bg-slate-900 text-slate-200">Español (ES)</option>
+                <option value="HI" class="bg-slate-900 text-slate-200">हिन्दी (HI)</option>
+                <option value="FR" class="bg-slate-900 text-slate-200">Français (FR)</option>
+                <option value="AR" class="bg-slate-900 text-slate-200">العربية (AR)</option>
+                <option value="BN" class="bg-slate-900 text-slate-200">বাংলা (BN)</option>
+                <option value="PT" class="bg-slate-900 text-slate-200">Português (PT)</option>
+                <option value="RU" class="bg-slate-900 text-slate-200">Русский (RU)</option>
+                <option value="UR" class="bg-slate-900 text-slate-200">اردو (UR)</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-sky-400">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </div>
+        </div>
+
+        <!-- Audio Toggle Button -->
+        <button id="sound-toggle" onclick="toggleSound()" class="interactive-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-purple-300 flex items-center space-x-2">
             <svg id="sound-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-            <span id="sound-label">Sound: OFF</span>
+            <span id="sound-label">AUDIO: OFF</span>
         </button>
     </header>
 
+    <!-- Main Crypto Countdown Area (Pure Numbers, No Extra Text, Absolute Centered Focus) -->
     <main class="z-10 flex flex-col items-center justify-center px-4 w-full max-w-7xl floating-container">
         
+        <!-- Crypto Ticker Sub-Header Tag -->
+        <div class="mb-6 flex items-center space-x-3 px-5 py-2 rounded-xl crypto-badge backdrop-blur-md">
+            <span class="text-xs font-mono font-extrabold tracking-[0.4em] text-sky-400 uppercase">CHRONOS PROTOCOL LAUNCH</span>
+            <span class="text-xs font-mono text-slate-400">// BLOCK 0x2026</span>
+        </div>
+
         <!-- Main Countdown Grid (Months, Days, Hours, Minutes) with Fixed Width Boxes to prevent layout shift -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full max-w-5xl mb-8">
             
             <!-- Months -->
-            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-indigo-500/50 glow-pulse">
-                <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-sky-500/60 glow-pulse">
+                <div class="absolute inset-0 bg-gradient-to-b from-sky-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight mb-2">
                     <span id="months-val" class="fixed-digit-box w-28 sm:w-40">00</span>
                 </div>
-                <div id="label-months" class="text-xs sm:text-sm uppercase tracking-[0.3em] text-indigo-400 font-extrabold">Months</div>
+                <div id="label-months" class="text-xs sm:text-sm uppercase tracking-[0.3em] text-sky-400 font-extrabold">Months</div>
             </div>
 
             <!-- Days -->
-            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-purple-500/50 glow-pulse" style="animation-delay: 1s;">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-purple-500/60 glow-pulse" style="animation-delay: 1s;">
                 <div class="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight mb-2">
                     <span id="days-val" class="fixed-digit-box w-36 sm:w-52">000</span>
@@ -133,7 +172,7 @@
             </div>
 
             <!-- Hours -->
-            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-pink-500/50 glow-pulse" style="animation-delay: 2s;">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-pink-500/60 glow-pulse" style="animation-delay: 2s;">
                 <div class="absolute inset-0 bg-gradient-to-b from-pink-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight mb-2">
                     <span id="hours-val" class="fixed-digit-box w-28 sm:w-40">00</span>
@@ -142,7 +181,7 @@
             </div>
 
             <!-- Minutes -->
-            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-cyan-500/50 glow-pulse" style="animation-delay: 3s;">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-cyan-500/60 glow-pulse" style="animation-delay: 3s;">
                 <div class="absolute inset-0 bg-gradient-to-b from-cyan-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight mb-2">
                     <span id="minutes-val" class="fixed-digit-box w-28 sm:w-40">00</span>
@@ -152,32 +191,41 @@
 
         </div>
 
-        <!-- Seconds & Milliseconds Bar -->
+        <!-- Seconds & Milliseconds Bar (High-Precision Ticker) -->
         <div class="glass-panel w-full max-w-3xl rounded-2xl px-8 py-5 flex items-center justify-center space-x-4 shadow-2xl">
             <div class="font-mono text-3xl sm:text-5xl font-black tracking-wider flex items-center">
                 <span id="seconds-val" class="fixed-digit-box w-20 text-pink-400">00</span>
                 <span class="text-slate-600 mx-2 animate-pulse">:</span>
-                <span id="milliseconds-val" class="fixed-digit-box w-36 text-indigo-400 text-2xl sm:text-4xl">000</span>
+                <span id="milliseconds-val" class="fixed-digit-box w-36 text-sky-400 text-2xl sm:text-4xl">000</span>
             </div>
         </div>
 
     </main>
 
     <script>
-        // Target: 18 October 2026, 08:00:00 WIB
+        // Target: 18 October 2026, 08:00:00 UTC / WIB Launch
         const targetDate = new Date('2026-10-18T08:00:00').getTime();
 
-        let currentLang = 'EN'; // Default English as requested
+        let currentLang = 'EN';
         let soundEnabled = false;
         let audioCtx = null;
 
+        // Translations for Top 10 Popular World Languages (Excluding Indonesian)
         const translations = {
-            EN: { months: 'Months', days: 'Days', hours: 'Hours', minutes: 'Minutes', soundOff: 'Sound: OFF', soundOn: 'Sound: ON' },
-            ID: { months: 'Bulan', days: 'Hari', hours: 'Jam', minutes: 'Menit', soundOff: 'Suara: MATI', soundOn: 'Suara: NYALA' }
+            EN: { months: 'Months', days: 'Days', hours: 'Hours', minutes: 'Minutes', soundOff: 'AUDIO: OFF', soundOn: 'AUDIO: ON' },
+            ZH: { months: '月', days: '天', hours: '小时', minutes: '分钟', soundOff: '声音: 关闭', soundOn: '声音: 开启' },
+            ES: { months: 'Meses', days: 'Días', hours: 'Horas', minutes: 'Minutos', soundOff: 'AUDIO: APAGADO', soundOn: 'AUDIO: ENCENDIDO' },
+            HI: { months: 'महीने', days: 'दिन', hours: 'घंटे', minutes: 'मिनट', soundOff: 'ऑडियो: बंद', soundOn: 'ऑडियो: चालू' },
+            FR: { months: 'Mois', days: 'Jours', hours: 'Heures', minutes: 'Minutes', soundOff: 'AUDIO: ARRÊT', soundOn: 'AUDIO: MARCHE' },
+            AR: { months: 'أشهر', days: 'أيام', hours: 'ساعات', minutes: 'دقائق', soundOff: 'الصوت: متوقف', soundOn: 'الصوت: مفعل' },
+            BN: { months: 'মাস', days: 'দিন', hours: 'ঘণ্টা', minutes: 'মিনিট', soundOff: 'অডিও: বন্ধ', soundOn: 'অডিও: চালু' },
+            PT: { months: 'Meses', days: 'Dias', hours: 'Horas', minutes: 'Minutos', soundOff: 'ÁUDIO: DESL', soundOn: 'ÁUDIO: LIG' },
+            RU: { months: 'Месяцы', days: 'Дни', hours: 'Часы', minutes: 'Минуты', soundOff: 'ЗВУК: ВЫКЛ', soundOn: 'ЗВУК: ВКЛ' },
+            UR: { months: 'مہینے', days: 'دن', hours: 'گھنٹے', minutes: 'منٹ', soundOff: 'آڈیو: بند', soundOn: 'آڈیو: آن' }
         };
 
-        function toggleLanguage() {
-            currentLang = currentLang === 'EN' ? 'ID' : 'EN';
+        function changeLanguage(lang) {
+            currentLang = lang;
             document.getElementById('label-months').innerText = translations[currentLang].months;
             document.getElementById('label-days').innerText = translations[currentLang].days;
             document.getElementById('label-hours').innerText = translations[currentLang].hours;
@@ -201,13 +249,13 @@
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 high-tech blip
+                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.08);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
+                osc.stop(audioCtx.currentTime + 0.08);
             } catch (e) {
                 // Audio context policy fallback
             }
@@ -283,7 +331,7 @@
             const container = document.getElementById('webgl-container');
 
             scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x030712, 0.035);
+            scene.fog = new THREE.FogExp2(0x020617, 0.035);
 
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 30;
@@ -291,22 +339,22 @@
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.setClearColor(0x030712);
+            renderer.setClearColor(0x020617);
             container.appendChild(renderer.domElement);
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            // Cyberpunk Crypto Node Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
             scene.add(ambientLight);
 
-            const pointLight1 = new THREE.PointLight(0x6366f1, 4, 60);
-            pointLight1.position.set(20, 20, 20);
+            const pointLight1 = new THREE.PointLight(0x0ea5e9, 5, 70);
+            pointLight1.position.set(25, 25, 25);
             scene.add(pointLight1);
 
-            const pointLight2 = new THREE.PointLight(0xec4899, 4, 60);
-            pointLight2.position.set(-20, -20, 20);
+            const pointLight2 = new THREE.PointLight(0xa855f7, 5, 70);
+            pointLight2.position.set(-25, -25, 25);
             scene.add(pointLight2);
 
-            // Floating Geometric Crystals
+            // Floating Decentralized Cryptographic Crystals
             crystalGroup = new THREE.Group();
             const geometries = [
                 new THREE.IcosahedronGeometry(2, 0),
@@ -316,29 +364,29 @@
             ];
 
             const materials = [
-                new THREE.MeshPhysicalMaterial({ color: 0x6366f1, roughness: 0.1, metalness: 0.8, transmission: 0.6, transparent: true, opacity: 0.85 }),
-                new THREE.MeshPhysicalMaterial({ color: 0xa855f7, roughness: 0.2, metalness: 0.7, transmission: 0.5, transparent: true, opacity: 0.85 }),
-                new THREE.MeshPhysicalMaterial({ color: 0xec4899, roughness: 0.15, metalness: 0.9, transmission: 0.7, transparent: true, opacity: 0.85 }),
-                new THREE.MeshPhysicalMaterial({ color: 0x06b6d4, roughness: 0.1, metalness: 0.8, transmission: 0.6, transparent: true, opacity: 0.85 })
+                new THREE.MeshPhysicalMaterial({ color: 0x0ea5e9, roughness: 0.1, metalness: 0.9, transmission: 0.5, transparent: true, opacity: 0.85 }),
+                new THREE.MeshPhysicalMaterial({ color: 0xa855f7, roughness: 0.15, metalness: 0.85, transmission: 0.4, transparent: true, opacity: 0.85 }),
+                new THREE.MeshPhysicalMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.95, transmission: 0.6, transparent: true, opacity: 0.85 }),
+                new THREE.MeshPhysicalMaterial({ color: 0xec4899, roughness: 0.2, metalness: 0.8, transmission: 0.5, transparent: true, opacity: 0.85 })
             ];
 
-            for (let i = 0; i < 30; i++) {
+            for (let i = 0; i < 35; i++) {
                 const geom = geometries[Math.floor(Math.random() * geometries.length)];
                 const mat = materials[Math.floor(Math.random() * materials.length)];
                 const mesh = new THREE.Mesh(geom, mat);
 
                 mesh.position.set(
-                    (Math.random() - 0.5) * 60,
+                    (Math.random() - 0.5) * 65,
                     (Math.random() - 0.5) * 35,
-                    (Math.random() - 0.5) * 35 - 5
+                    (Math.random() - 0.5) * 40 - 5
                 );
 
                 mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
                 
                 mesh.userData = {
-                    rotSpeedX: (Math.random() - 0.5) * 0.015,
-                    rotSpeedY: (Math.random() - 0.5) * 0.015,
-                    floatSpeed: Math.random() * 0.025 + 0.01,
+                    rotSpeedX: (Math.random() - 0.5) * 0.02,
+                    rotSpeedY: (Math.random() - 0.5) * 0.02,
+                    floatSpeed: Math.random() * 0.03 + 0.01,
                     floatOffset: Math.random() * Math.PI * 2
                 };
 
@@ -346,22 +394,22 @@
             }
             scene.add(crystalGroup);
 
-            // Particle Dust Field
-            const particlesCount = 900;
+            // Blockchain Distributed Particle Dust Field
+            const particlesCount = 1000;
             const posArray = new Float32Array(particlesCount * 3);
 
             for (let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 90;
+                posArray[i] = (Math.random() - 0.5) * 100;
             }
 
             const particlesGeometry = new THREE.BufferGeometry();
             particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
             const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.14,
-                color: 0x818cf8,
+                size: 0.15,
+                color: 0x38bdf8,
                 transparent: true,
-                opacity: 0.75,
+                opacity: 0.8,
                 blending: THREE.AdditiveBlending
             });
 
@@ -380,7 +428,6 @@
         }
 
         function onCanvasClick(event) {
-            // Trigger interactive 3D particle burst on click
             const vector = new THREE.Vector3(
                 (event.clientX / window.innerWidth) * 2 - 1,
                 -(event.clientY / window.innerHeight) * 2 + 1,
@@ -396,16 +443,16 @@
 
             if (typeof confetti === 'function') {
                 confetti({
-                    particleCount: 25,
-                    spread: 60,
+                    particleCount: 30,
+                    spread: 70,
                     origin: { x: event.clientX / window.innerWidth, y: event.clientY / window.innerHeight },
-                    colors: ['#6366f1', '#a855f7', '#ec4899', '#06b6d4']
+                    colors: ['#0ea5e9', '#38bdf8', '#a855f7', '#ec4899']
                 });
             }
         }
 
         function createParticleBurst(position) {
-            const count = 50;
+            const count = 60;
             const geom = new THREE.BufferGeometry();
             const positions = new Float32Array(count * 3);
             const velocities = [];
@@ -416,16 +463,16 @@
                 positions[i * 3 + 2] = position.z;
 
                 velocities.push(new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.8,
-                    (Math.random() - 0.5) * 0.8,
-                    (Math.random() - 0.5) * 0.8
+                    (Math.random() - 0.5) * 0.9,
+                    (Math.random() - 0.5) * 0.9,
+                    (Math.random() - 0.5) * 0.9
                 ));
             }
 
             geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             const mat = new THREE.PointsMaterial({
-                size: 0.25,
-                color: Math.random() > 0.5 ? 0xec4899 : 0x6366f1,
+                size: 0.28,
+                color: Math.random() > 0.5 ? 0x0ea5e9 : 0xa855f7,
                 transparent: true,
                 opacity: 1,
                 blending: THREE.AdditiveBlending
@@ -462,7 +509,6 @@
 
             particlesMesh.rotation.y = elapsedTime * 0.03;
 
-            // Update interactive click particle bursts
             for (let i = burstParticles.length - 1; i >= 0; i--) {
                 const bp = burstParticles[i];
                 bp.life -= 0.02;
@@ -491,7 +537,7 @@
             initThree();
             animateThree();
             updateCountdown();
-            setInterval(updateCountdown, 33); // ~30 FPS high precision countdown update
+            setInterval(updateCountdown, 33); // ~30 FPS high-precision crypto countdown update
         }
     </script>
 </body>
