@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="id" class="dark" id="html-root">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,10 +32,14 @@
         }
         @keyframes floatSlow {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(1deg); }
+            50% { transform: translateY(-12px) rotate(1.5deg); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.4; filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.4)); }
+            50% { opacity: 0.8; filter: drop-shadow(0 0 35px rgba(236, 72, 153, 0.7)); }
         }
         .number-change {
-            animation: numberFlip 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: numberFlip 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         .fixed-digit-box {
             display: inline-block;
@@ -50,7 +54,10 @@
             animation: shimmer 5s linear infinite;
         }
         .floating-container {
-            animation: floatSlow 6s ease-in-out infinite;
+            animation: floatSlow 7s ease-in-out infinite;
+        }
+        .glow-pulse {
+            animation: pulseGlow 4s ease-in-out infinite;
         }
         body {
             background-color: #030712;
@@ -64,60 +71,83 @@
             position: fixed;
             inset: 0;
             z-index: 0;
-            pointer-events: none;
+            cursor: pointer;
         }
         .glass-panel {
-            background: rgba(15, 23, 42, 0.65);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.68);
+            backdrop-filter: blur(28px);
+            -webkit-backdrop-filter: blur(28px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+        }
+        .interactive-btn {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .interactive-btn:hover {
+            background: rgba(99, 102, 241, 0.3);
+            border-color: rgba(99, 102, 241, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
         }
     </style>
 </head>
 <body class="w-screen h-screen flex flex-col items-center justify-center relative overflow-hidden">
 
-    <div id="webgl-container"></div>
+    <div id="webgl-container" title="Click to interact with 3D space"></div>
+
+    <header class="absolute top-6 z-20 flex items-center space-x-3 px-6 py-3 glass-panel rounded-full shadow-2xl">
+        <button id="lang-toggle" onclick="toggleLanguage()" class="interactive-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-indigo-300 flex items-center space-x-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path></svg>
+            <span id="lang-label">EN / ID</span>
+        </button>
+        <button id="sound-toggle" onclick="toggleSound()" class="interactive-btn px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest text-pink-300 flex items-center space-x-2">
+            <svg id="sound-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+            <span id="sound-label">Sound: OFF</span>
+        </button>
+    </header>
 
     <main class="z-10 flex flex-col items-center justify-center px-4 w-full max-w-7xl floating-container">
         
-        <!-- Main Countdown Grid (Months, Days, Hours, Minutes) -->
+        <!-- Main Countdown Grid (Months, Days, Hours, Minutes) with Fixed Width Boxes to prevent layout shift -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full max-w-5xl mb-8">
             
             <!-- Months -->
-            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-indigo-500/50">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-indigo-500/50 glow-pulse">
                 <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight mb-2">
-                    <span id="months-val" class="fixed-digit-box">00</span>
+                    <span id="months-val" class="fixed-digit-box w-28 sm:w-40">00</span>
                 </div>
-                <div class="text-xs sm:text-sm uppercase tracking-[0.3em] text-indigo-400 font-extrabold">Bulan</div>
+                <div id="label-months" class="text-xs sm:text-sm uppercase tracking-[0.3em] text-indigo-400 font-extrabold">Months</div>
             </div>
 
             <!-- Days -->
-            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-purple-500/50">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-purple-500/50 glow-pulse" style="animation-delay: 1s;">
                 <div class="absolute inset-0 bg-gradient-to-b from-purple-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight mb-2">
-                    <span id="days-val" class="fixed-digit-box w-32">000</span>
+                    <span id="days-val" class="fixed-digit-box w-36 sm:w-52">000</span>
                 </div>
-                <div class="text-xs sm:text-sm uppercase tracking-[0.3em] text-purple-400 font-extrabold">Hari</div>
+                <div id="label-days" class="text-xs sm:text-sm uppercase tracking-[0.3em] text-purple-400 font-extrabold">Days</div>
             </div>
 
             <!-- Hours -->
-            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-pink-500/50">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-pink-500/50 glow-pulse" style="animation-delay: 2s;">
                 <div class="absolute inset-0 bg-gradient-to-b from-pink-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight mb-2">
-                    <span id="hours-val" class="fixed-digit-box">00</span>
+                    <span id="hours-val" class="fixed-digit-box w-28 sm:w-40">00</span>
                 </div>
-                <div class="text-xs sm:text-sm uppercase tracking-[0.3em] text-pink-400 font-extrabold">Jam</div>
+                <div id="label-hours" class="text-xs sm:text-sm uppercase tracking-[0.3em] text-pink-400 font-extrabold">Hours</div>
             </div>
 
             <!-- Minutes -->
-            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-cyan-500/50">
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 flex flex-col items-center justify-center relative group transition-all duration-500 hover:border-cyan-500/50 glow-pulse" style="animation-delay: 3s;">
                 <div class="absolute inset-0 bg-gradient-to-b from-cyan-500/10 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div class="text-5xl sm:text-7xl md:text-8xl font-black text-white tracking-tight mb-2">
-                    <span id="minutes-val" class="fixed-digit-box">00</span>
+                    <span id="minutes-val" class="fixed-digit-box w-28 sm:w-40">00</span>
                 </div>
-                <div class="text-xs sm:text-sm uppercase tracking-[0.3em] text-cyan-400 font-extrabold">Menit</div>
+                <div id="label-minutes" class="text-xs sm:text-sm uppercase tracking-[0.3em] text-cyan-400 font-extrabold">Minutes</div>
             </div>
 
         </div>
@@ -125,25 +155,65 @@
         <!-- Seconds & Milliseconds Bar -->
         <div class="glass-panel w-full max-w-3xl rounded-2xl px-8 py-5 flex items-center justify-center space-x-4 shadow-2xl">
             <div class="font-mono text-3xl sm:text-5xl font-black tracking-wider flex items-center">
-                <span id="seconds-val" class="fixed-digit-box w-16 text-pink-400">00</span>
+                <span id="seconds-val" class="fixed-digit-box w-20 text-pink-400">00</span>
                 <span class="text-slate-600 mx-2 animate-pulse">:</span>
-                <span id="milliseconds-val" class="fixed-digit-box w-28 text-indigo-400 text-2xl sm:text-4xl">000</span>
+                <span id="milliseconds-val" class="fixed-digit-box w-36 text-indigo-400 text-2xl sm:text-4xl">000</span>
             </div>
         </div>
 
     </main>
 
     <script>
-        // Target: 18 October 2026, 08:00:00 AM WIB
+        // Target: 18 October 2026, 08:00:00 WIB
         const targetDate = new Date('2026-10-18T08:00:00').getTime();
 
-        const prevValues = {
-            months: '',
-            days: '',
-            hours: '',
-            minutes: '',
-            seconds: ''
+        let currentLang = 'EN'; // Default English as requested
+        let soundEnabled = false;
+        let audioCtx = null;
+
+        const translations = {
+            EN: { months: 'Months', days: 'Days', hours: 'Hours', minutes: 'Minutes', soundOff: 'Sound: OFF', soundOn: 'Sound: ON' },
+            ID: { months: 'Bulan', days: 'Hari', hours: 'Jam', minutes: 'Menit', soundOff: 'Suara: MATI', soundOn: 'Suara: NYALA' }
         };
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'EN' ? 'ID' : 'EN';
+            document.getElementById('label-months').innerText = translations[currentLang].months;
+            document.getElementById('label-days').innerText = translations[currentLang].days;
+            document.getElementById('label-hours').innerText = translations[currentLang].hours;
+            document.getElementById('label-minutes').innerText = translations[currentLang].minutes;
+            playClickSound();
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            if (soundEnabled && !audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const soundLabel = document.getElementById('sound-label');
+            soundLabel.innerText = soundEnabled ? translations[currentLang].soundOn : translations[currentLang].soundOff;
+            playClickSound();
+        }
+
+        function playClickSound() {
+            if (!soundEnabled || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } catch (e) {
+                // Audio context policy fallback
+            }
+        }
+
+        const prevValues = { months: '', days: '', hours: '', minutes: '', seconds: '' };
 
         function updateCountdown() {
             const now = new Date().getTime();
@@ -205,8 +275,7 @@
             }
         }
 
-        // Three.js 3D Background Setup
-        let scene, camera, renderer, crystalGroup, particlesMesh;
+        let scene, camera, renderer, crystalGroup, particlesMesh, burstParticles = [];
         let mouseX = 0, mouseY = 0;
         let targetX = 0, targetY = 0;
 
@@ -226,15 +295,15 @@
             container.appendChild(renderer.domElement);
 
             // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
             scene.add(ambientLight);
 
-            const pointLight1 = new THREE.PointLight(0x6366f1, 3, 50);
-            pointLight1.position.set(15, 15, 15);
+            const pointLight1 = new THREE.PointLight(0x6366f1, 4, 60);
+            pointLight1.position.set(20, 20, 20);
             scene.add(pointLight1);
 
-            const pointLight2 = new THREE.PointLight(0xec4899, 3, 50);
-            pointLight2.position.set(-15, -15, 15);
+            const pointLight2 = new THREE.PointLight(0xec4899, 4, 60);
+            pointLight2.position.set(-20, -20, 20);
             scene.add(pointLight2);
 
             // Floating Geometric Crystals
@@ -247,29 +316,29 @@
             ];
 
             const materials = [
-                new THREE.MeshPhysicalMaterial({ color: 0x6366f1, roughness: 0.1, metalness: 0.8, transmission: 0.6, transparent: true, opacity: 0.8 }),
-                new THREE.MeshPhysicalMaterial({ color: 0xa855f7, roughness: 0.2, metalness: 0.7, transmission: 0.5, transparent: true, opacity: 0.8 }),
-                new THREE.MeshPhysicalMaterial({ color: 0xec4899, roughness: 0.15, metalness: 0.9, transmission: 0.7, transparent: true, opacity: 0.8 }),
-                new THREE.MeshPhysicalMaterial({ color: 0x06b6d4, roughness: 0.1, metalness: 0.8, transmission: 0.6, transparent: true, opacity: 0.8 })
+                new THREE.MeshPhysicalMaterial({ color: 0x6366f1, roughness: 0.1, metalness: 0.8, transmission: 0.6, transparent: true, opacity: 0.85 }),
+                new THREE.MeshPhysicalMaterial({ color: 0xa855f7, roughness: 0.2, metalness: 0.7, transmission: 0.5, transparent: true, opacity: 0.85 }),
+                new THREE.MeshPhysicalMaterial({ color: 0xec4899, roughness: 0.15, metalness: 0.9, transmission: 0.7, transparent: true, opacity: 0.85 }),
+                new THREE.MeshPhysicalMaterial({ color: 0x06b6d4, roughness: 0.1, metalness: 0.8, transmission: 0.6, transparent: true, opacity: 0.85 })
             ];
 
-            for (let i = 0; i < 25; i++) {
+            for (let i = 0; i < 30; i++) {
                 const geom = geometries[Math.floor(Math.random() * geometries.length)];
                 const mat = materials[Math.floor(Math.random() * materials.length)];
                 const mesh = new THREE.Mesh(geom, mat);
 
                 mesh.position.set(
-                    (Math.random() - 0.5) * 50,
-                    (Math.random() - 0.5) * 30,
-                    (Math.random() - 0.5) * 30 - 5
+                    (Math.random() - 0.5) * 60,
+                    (Math.random() - 0.5) * 35,
+                    (Math.random() - 0.5) * 35 - 5
                 );
 
                 mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
                 
                 mesh.userData = {
-                    rotSpeedX: (Math.random() - 0.5) * 0.01,
-                    rotSpeedY: (Math.random() - 0.5) * 0.01,
-                    floatSpeed: Math.random() * 0.02 + 0.01,
+                    rotSpeedX: (Math.random() - 0.5) * 0.015,
+                    rotSpeedY: (Math.random() - 0.5) * 0.015,
+                    floatSpeed: Math.random() * 0.025 + 0.01,
                     floatOffset: Math.random() * Math.PI * 2
                 };
 
@@ -278,35 +347,93 @@
             scene.add(crystalGroup);
 
             // Particle Dust Field
-            const particlesCount = 700;
+            const particlesCount = 900;
             const posArray = new Float32Array(particlesCount * 3);
 
             for (let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 80;
+                posArray[i] = (Math.random() - 0.5) * 90;
             }
 
             const particlesGeometry = new THREE.BufferGeometry();
             particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
             const particlesMaterial = new THREE.PointsMaterial({
-                size: 0.12,
+                size: 0.14,
                 color: 0x818cf8,
                 transparent: true,
-                opacity: 0.7,
+                opacity: 0.75,
                 blending: THREE.AdditiveBlending
             });
 
             particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
             scene.add(particlesMesh);
 
-            // Event Listeners
+            // Event Listeners for Interaction
             window.addEventListener('resize', onWindowResize);
             window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('click', onCanvasClick);
         }
 
         function onMouseMove(event) {
             mouseX = (event.clientX / window.innerWidth) * 2 - 1;
             mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
+
+        function onCanvasClick(event) {
+            // Trigger interactive 3D particle burst on click
+            const vector = new THREE.Vector3(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1,
+                0.5
+            );
+            vector.unproject(camera);
+            const dir = vector.sub(camera.position).normalize();
+            const distance = 25;
+            const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+
+            createParticleBurst(pos);
+            playClickSound();
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 25,
+                    spread: 60,
+                    origin: { x: event.clientX / window.innerWidth, y: event.clientY / window.innerHeight },
+                    colors: ['#6366f1', '#a855f7', '#ec4899', '#06b6d4']
+                });
+            }
+        }
+
+        function createParticleBurst(position) {
+            const count = 50;
+            const geom = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const velocities = [];
+
+            for (let i = 0; i < count; i++) {
+                positions[i * 3] = position.x;
+                positions[i * 3 + 1] = position.y;
+                positions[i * 3 + 2] = position.z;
+
+                velocities.push(new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.8,
+                    (Math.random() - 0.5) * 0.8,
+                    (Math.random() - 0.5) * 0.8
+                ));
+            }
+
+            geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const mat = new THREE.PointsMaterial({
+                size: 0.25,
+                color: Math.random() > 0.5 ? 0xec4899 : 0x6366f1,
+                transparent: true,
+                opacity: 1,
+                blending: THREE.AdditiveBlending
+            });
+
+            const pSystem = new THREE.Points(geom, mat);
+            scene.add(pSystem);
+            burstParticles.push({ mesh: pSystem, velocities: velocities, life: 1.0 });
         }
 
         function onWindowResize() {
@@ -318,8 +445,8 @@
         function animateThree() {
             requestAnimationFrame(animateThree);
 
-            targetX = mouseX * 2;
-            targetY = mouseY * 2;
+            targetX = mouseX * 2.5;
+            targetY = mouseY * 2.5;
 
             camera.position.x += (targetX - camera.position.x) * 0.05;
             camera.position.y += (targetY - camera.position.y) * 0.05;
@@ -334,6 +461,27 @@
             });
 
             particlesMesh.rotation.y = elapsedTime * 0.03;
+
+            // Update interactive click particle bursts
+            for (let i = burstParticles.length - 1; i >= 0; i--) {
+                const bp = burstParticles[i];
+                bp.life -= 0.02;
+                const posArr = bp.mesh.geometry.attributes.position.array;
+                for (let j = 0; j < bp.velocities.length; j++) {
+                    posArr[j * 3] += bp.velocities[j].x;
+                    posArr[j * 3 + 1] += bp.velocities[j].y;
+                    posArr[j * 3 + 2] += bp.velocities[j].z;
+                }
+                bp.mesh.geometry.attributes.position.needsUpdate = true;
+                bp.mesh.material.opacity = bp.life;
+
+                if (bp.life <= 0) {
+                    scene.remove(bp.mesh);
+                    bp.mesh.geometry.dispose();
+                    bp.mesh.material.dispose();
+                    burstParticles.splice(i, 1);
+                }
+            }
 
             renderer.render(scene, camera);
         }
